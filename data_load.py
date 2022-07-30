@@ -69,7 +69,6 @@ class Normalize(object):
         # mean = 100, sqrt = 50, so, pts should be (pts - 100)/50
         key_pts_copy = (key_pts_copy - 100)/50.0
 
-
         return {'image': image_copy, 'keypoints': key_pts_copy}
 
 
@@ -157,5 +156,5 @@ class ToTensor(object):
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
         
-        return {'image': torch.from_numpy(image),
+        return {'image': torch.from_numpy(image.copy()),
                 'keypoints': torch.from_numpy(key_pts)}

@@ -1,5 +1,6 @@
-## TODO: define the convolutional neural network architecture
+# TODO: define the convolutional neural network architecture
 
+from cmath import tan
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -12,26 +13,82 @@ class Net(nn.Module):
 
     def __init__(self):
         super(Net, self).__init__()
-        
-        ## TODO: Define all the layers of this CNN, the only requirements are:
-        ## 1. This network takes in a square (same width and height), grayscale image as input
-        ## 2. It ends with a linear layer that represents the keypoints
-        ## it's suggested that you make this last layer output 136 values, 2 for each of the 68 keypoint (x, y) pairs
-        
-        # As an example, you've been given a convolutional layer, which you may (but don't have to) change:
-        # 1 input image channel (grayscale), 32 output channels/feature maps, 5x5 square convolution kernel
-        self.conv1 = nn.Conv2d(1, 32, 5)
-        
-        ## Note that among the layers to add, consider including:
-        # maxpooling layers, multiple conv layers, fully-connected layers, and other layers (such as dropout or batch normalization) to avoid overfitting
-        
 
-        
+        # Calculate feature map sizes by:
+        # new width after first convolution:
+        # = (W (224) - kernel_size + 2 Padding) / Stride   +  1
+        # and after pooling:
+        # new width = (W (220) - kernel_size) / stride  +  1
+
+        # from 224 x 224 x 1Channel
+        # to   110 x 100 x 1Channel x 32 Feature maps
+        # and  54 x 54 x 1Channel x 32 Feature maps
+
+        self.conv_layer1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, stride=1),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+            )
+
+        self.conv_layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride=1),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+        )
+
+        self.conv_layer3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride=1),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.BatchNorm2d(128),
+        )
+        self.conv_layer4 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=3, stride=1),
+            nn.AvgPool2d(2,2),
+            nn.ReLU(),
+            nn.BatchNorm2d(128),
+        )
+      
+        self.regressor = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(128*12*12, 1024),
+            nn.Tanh(),
+            nn.Dropout1d(0.01),
+            nn.Linear(1024, 136)
+        )
+
+        self.simple = nn.Sequential(
+            nn.Conv2d(1, 32, 3),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3),
+            nn.MaxPool2d(2,2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(10816,4096),
+            nn.ReLU(),
+            nn.Linear(4096,1024),
+            nn.Linear(1024, 136)
+        )
+        torch.nn.init.xavier_uniform_(self.conv_layer1[0].weight)
+        torch.nn.init.xavier_uniform_(self.conv_layer2[0].weight)
+        torch.nn.init.xavier_uniform_(self.conv_layer3[0].weight)
+        torch.nn.init.xavier_uniform_(self.conv_layer4[0].weight)
+        torch.nn.init.xavier_normal_(self.regressor[1].weight)
+        torch.nn.init.xavier_normal_(self.regressor[4].weight)
+       # torch.nn.init.xavier_normal_(self.regressor[5].weight)
+
+        # maxpooling layers, multiple conv layers, fully-connected layers, and other layers (such as dropout or batch normalization) to avoid overfitting
+
     def forward(self, x):
-        ## TODO: Define the feedforward behavior of this model
-        ## x is the input image and, as an example, here you may choose to include a pool/conv step:
-        ## x = self.pool(F.relu(self.conv1(x)))
-        
-        
-        # a modified x, having gone through all the layers of your model, should be returned
-        return x
+        #x = self.conv_layer1(x)
+       # x = self.conv_layer2(x)
+       # x = self.conv_layer3(x)
+      #  x = self.conv_layer4(x)
+      #  x = self.regressor(x)
+        return self.simple(x)
